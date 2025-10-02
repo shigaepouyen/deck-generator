@@ -1,0 +1,71 @@
+/* assets/print-marks.css */
+/*
+  Taille de la carte de poker standard : 63.5mm × 88.9mm
+  Ce CSS positionne les cartes et ajoute les traits de coupe.
+*/
+:root {
+  --card-w: 63.5mm;
+  --card-h: 88.9mm;
+  --bleed: 3mm; /* La valeur sera injectée par PHP */
+}
+
+@page {
+  /* Marges de la page pour laisser de la place aux repères et à la manipulation */
+  margin: 10mm;
+}
+
+body {
+  margin: 0;
+}
+
+.sheet {
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  page-break-after: always;
+  width: calc(var(--cols) * (var(--card-w) + 2 * var(--bleed) + var(--gutter)) - var(--gutter));
+  height: calc(var(--rows) * (var(--card-h) + 2 * var(--bleed) + var(--gutter)) - var(--gutter));
+}
+
+.card-slot {
+  position: absolute;
+  box-sizing: border-box;
+  width:  calc(var(--card-w) + 2 * var(--bleed));
+  height: calc(var(--card-h) + 2 * var(--bleed));
+  overflow: hidden; /* <-- AJOUTEZ CETTE LIGNE */
+}
+
+/* --- Traits de coupe --- */
+.card-slot::before,
+.card-slot::after {
+  content: '';
+  position: absolute;
+  width: 10mm;
+  height: 10mm;
+  border-color: #000;
+  border-style: solid;
+  border-width: 0;
+  /* Épaisseur des traits */
+  --line-w: 0.2pt;
+}
+
+/* Coins Haut-Gauche & Haut-Droit */
+.card-slot::before {
+  top:    calc(-1 * var(--bleed));
+  border-top-width: var(--line-w);
+}
+/* Coins Bas-Gauche & Bas-Droit */
+.card-slot::after {
+  bottom: calc(-1 * var(--bleed));
+  border-bottom-width: var(--line-w);
+}
+
+/* Lignes verticales */
+.card-slot[data-col="0"]::before,
+.card-slot[data-col="0"]::after { left:  calc(-1 * var(--bleed)); border-left-width: var(--line-w); }
+.card-slot[data-col-last="true"]::before,
+.card-slot[data-col-last="true"]::after { right: calc(-1 * var(--bleed)); border-right-width: var(--line-w); }
+
+/* Lignes horizontales */
+.card-slot[data-row="0"]::before { top: calc(-1 * var(--bleed)); border-top-width: var(--line-w); }
+.card-slot[data-row-last="true"]::after { bottom: calc(-1 * var(--bleed)); border-bottom-width: var(--line-w); }

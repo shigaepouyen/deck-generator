@@ -1,0 +1,147 @@
+/* assets/default-card.css */
+:root {
+  --radius: 14pt;
+  --ink: #0f172a;
+  --muted: #6b7280;
+  --shadow: rgba(0, 0, 0, .18);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12pt;
+  border-radius: var(--radius);
+  background: var(--bg, #e5e7eb);
+  color: var(--ink);
+  box-shadow: 0 6pt 16pt var(--shadow);
+  font-family: Inter, Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact; /* Pour forcer l'impression des couleurs */
+  print-color-adjust: exact;         /* La version standard */
+}
+
+.card-badge {
+  position: absolute;
+  top: 10pt;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28pt;
+  height: 28pt;
+  border-radius: 9999px;
+  background: var(--pill, #0b254a);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12pt;
+  box-shadow: 0 2pt 6pt var(--shadow);
+}
+
+.card-band {
+  margin-top: 18pt;
+  background: var(--pill);
+  color: #fff;
+  border-radius: 10pt;
+  padding: 6pt 10pt;
+  text-align: center;
+  font-size: 9pt;
+  font-weight: 700;
+}
+
+.card-panel {
+  margin-top: 10pt;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+  border-radius: 12pt;
+  padding: 12pt 12pt 8pt;
+  box-shadow: inset 0 0 0 0.6pt rgba(0, 0, 0, .04);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-client {
+  font-size: 12pt;
+  font-weight: 800;
+  margin-bottom: 6pt;
+}
+
+.card-sep {
+  height: 0.6pt;
+  background: #e5e7eb;
+  margin: 6pt 0 8pt;
+}
+
+.card-body {
+  font-size: 9.3pt;
+  line-height: 1.45;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 16;
+  line-clamp: 16;
+  -webkit-box-orient: vertical;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8pt;
+  margin-top: 10pt;
+}
+
+.card-malefice {
+  font-size: 7.2pt;
+  line-height: 1.3;
+  font-style: italic;
+  color: var(--muted);
+  flex: 1;
+  min-height: 10pt;
+}
+
+.card-id {
+  font-size: 8pt;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* --- ÉTATS DE DENSITÉ (pour le JS fitBodies) --- */
+.card.compact .card-panel { padding: 10pt 10pt 6pt; }
+.card.ultra .card-panel { padding: 9pt 9pt 5pt; }
+.card.compact .card-body { font-size: 8.8pt; -webkit-line-clamp: 18; line-clamp: 18; }
+.card.ultra .card-body { font-size: 8.4pt; -webkit-line-clamp: 20; line-clamp: 20; }
+
+
+/* Couleurs par catégorie */
+.card.survey { --bg: #ffd166; --pill: #0a3d91; }
+.card.routage { --bg: #0ea5e9; --pill: #063a6b; }
+.card.api { --bg: #26c0a8; --pill: #0d4c46; }
+.card.bo { --bg: #f59e0b; --pill: #7a4a05; }
+.card.flux { --bg: #22a6f2; --pill: #0a3d91; }
+.card.securite { --bg: #ef4444; --pill: #5b1111; }
+.card.sdk { --bg: #14b8a6; --pill: #0c4f48; }
+.card.activation { --bg: #475569; --pill: #1f2937; }
+.card.general { --bg: #f1b94a; --pill: #233144; }
+.card.challenge { --bg: #6d28d9; --pill: #2a1366; }
+
+
+/* --- OPTIMISATION POUR L'IMPRESSION --- */
+@media print {
+  .card-panel { padding: 10pt 10pt 6pt; }
+  .card-body {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    display: block;
+    overflow: visible;
+    font-size: 8.8pt;
+    line-height: 1.35;
+  }
+  .card-client { margin-bottom: 4pt; }
+  .card-footer { margin-top: 6pt; }
+}

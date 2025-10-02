@@ -1,0 +1,17 @@
+<!-- assets/default-card.html -->
+<div class="card {{category_slug}}">
+  <div class="card-badge"><i class="{{icon}}"></i></div>
+  <div class="card-band">{{category}}</div>
+  <div class="card-panel">
+    <div class="card-client">{{client}}</div>
+    <div class="card-sep"></div>
+    <div class="card-body">{{{body}}}</div>
+    <div class="card-footer">
+  {{#if malefice_points}}
+    <div class="card-malefice">⚡ {{malefice}} ({{malefice_points}} pts)</div>
+  {{else}}
+    <div class="card-malefice"></div>
+  {{/if}}
+</div>
+  </div>
+</div>
