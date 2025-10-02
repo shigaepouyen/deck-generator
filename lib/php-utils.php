@@ -142,3 +142,9 @@ function generate_html_pages(array $rows, string $tpl_front, string $tpl_back, s
     }
     return $html;
 }
+
+function get_base_path() {
+    // __DIR__ est le dossier du fichier actuel (lib)
+    // dirname(__DIR__) est le dossier parent (la racine du projet)
+    return dirname(__DIR__);
+}

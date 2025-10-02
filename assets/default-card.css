@@ -1,11 +1,22 @@
-/* assets/default-card.css */
+/* assets/default-card.css — version propre et ordonnée
+   Ordre:
+   1) Variables
+   2) Base carte & éléments
+   3) États de densité
+   4) Palettes par catégorie
+   5) Impression
+   6) Typo & lisibilité (après tout le reste pour éviter l'écrasement)
+*/
+
+/* 1) Variables */
 :root {
   --radius: 14pt;
-  --ink: #0f172a;
-  --muted: #6b7280;
+  --ink: #111827;   /* encre principale (quasi noir) */
+  --muted: #475569; /* texte secondaire lisible */
   --shadow: rgba(0, 0, 0, .18);
 }
 
+/* 2) Base carte & éléments */
 .card {
   display: flex;
   flex-direction: column;
@@ -17,11 +28,11 @@
   background: var(--bg, #e5e7eb);
   color: var(--ink);
   box-shadow: 0 6pt 16pt var(--shadow);
-  font-family: Inter, Arial, sans-serif;
+  font-family: 'Lato', Inter, Arial, sans-serif;
   position: relative;
   overflow: hidden;
-  -webkit-print-color-adjust: exact; /* Pour forcer l'impression des couleurs */
-  print-color-adjust: exact;         /* La version standard */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .card-badge {
@@ -111,27 +122,25 @@
   color: #334155;
 }
 
-/* --- ÉTATS DE DENSITÉ (pour le JS fitBodies) --- */
+/* 3) États de densité (pour le JS fitBodies) */
 .card.compact .card-panel { padding: 10pt 10pt 6pt; }
-.card.ultra .card-panel { padding: 9pt 9pt 5pt; }
-.card.compact .card-body { font-size: 8.8pt; -webkit-line-clamp: 18; line-clamp: 18; }
-.card.ultra .card-body { font-size: 8.4pt; -webkit-line-clamp: 20; line-clamp: 20; }
+.card.ultra .card-panel   { padding: 9pt 9pt 5pt; }
+.card.compact .card-body  { font-size: 8.8pt; -webkit-line-clamp: 18; line-clamp: 18; }
+.card.ultra .card-body    { font-size: 8.4pt; -webkit-line-clamp: 20; line-clamp: 20; }
 
-
-/* Couleurs par catégorie */
-.card.survey { --bg: #ffd166; --pill: #0a3d91; }
-.card.routage { --bg: #0ea5e9; --pill: #063a6b; }
-.card.api { --bg: #26c0a8; --pill: #0d4c46; }
-.card.bo { --bg: #f59e0b; --pill: #7a4a05; }
-.card.flux { --bg: #22a6f2; --pill: #0a3d91; }
-.card.securite { --bg: #ef4444; --pill: #5b1111; }
-.card.sdk { --bg: #14b8a6; --pill: #0c4f48; }
-.card.activation { --bg: #475569; --pill: #1f2937; }
-.card.general { --bg: #f1b94a; --pill: #233144; }
+/* 4) Couleurs par catégorie */
+.card.survey    { --bg: #ffd166; --pill: #0a3d91; }
+.card.routage   { --bg: #0ea5e9; --pill: #063a6b; }
+.card.api       { --bg: #26c0a8; --pill: #0d4c46; }
+.card.bo        { --bg: #f59e0b; --pill: #7a4a05; }
+.card.flux      { --bg: #22a6f2; --pill: #0a3d91; }
+.card.securite  { --bg: #ef4444; --pill: #5b1111; }
+.card.sdk       { --bg: #14b8a6; --pill: #0c4f48; }
+.card.activation{ --bg: #475569; --pill: #1f2937; }
+.card.general   { --bg: #f1b94a; --pill: #233144; }
 .card.challenge { --bg: #6d28d9; --pill: #2a1366; }
 
-
-/* --- OPTIMISATION POUR L'IMPRESSION --- */
+/* 5) Optimisation impression */
 @media print {
   .card-panel { padding: 10pt 10pt 6pt; }
   .card-body {
@@ -145,3 +154,21 @@
   .card-client { margin-bottom: 4pt; }
   .card-footer { margin-top: 6pt; }
 }
+
+/* 6) Typo & lisibilité (placé en dernier pour éviter l'écrasement) */
+/* Polices: titres en Roboto Slab, reste en Lato (Inter en fallback) */
+.card        { font-family: Lato, Inter, Arial, sans-serif; }
+.card-client { font-family: 'Roboto Slab', Georgia, serif; }
+
+/* Couleur d'encre cohérente dans le panneau blanc */
+.card-panel, .card-client, .card-body, .card-footer { color: var(--ink) !important; }
+.card-body { line-height: 1.5; }
+
+/* Texte secondaire (notes, explications) */
+.card-malefice { color: var(--muted) !important; }
+
+/* Neutralise les héritages parasites qui grisent le contenu */
+.card-panel * { color: inherit !important; }
+
+/* Icônes alignées sur la couleur du texte courant */
+.card .fa, .card .fas, .card .far, .card .fal, .card .fab { color: currentColor !important; }
