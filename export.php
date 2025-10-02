@@ -11,6 +11,8 @@ $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
 extract_data($data);
+// Récupère le CSS personnalisé en prévoyant une valeur par défaut vide
+$css = $css ?? '';
 
 // --- DÉBUT DE LA CORRECTION ULTIME POUR LES ICÔNES ---
 
@@ -28,8 +30,12 @@ $fa_css_content_fixed = str_replace('url(webfonts', 'url(' . $absolute_webfonts_
 // --- FIN DE LA CORRECTION ---
 
 $html = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">';
-// 3. On injecte directement le contenu des CSS dans le HTML
-$html .= '<style>' . $fa_css_content_fixed . $fonts_css . $default_card_css . $print_marks_css . '</style>';
+$card_styles = $default_card_css;
+if (trim($css) !== '') {
+    $card_styles .= $css;
+}
+
+$html .= '<style>' . $fa_css_content_fixed . $fonts_css . $card_styles . $print_marks_css . '</style>';
 $html .= '</head><body>';
 $html .= generate_html_pages($rows, $tpl_front, $tpl_back, $mode, $cols, $rows_per_page, $bleed, $gutter, $flip, $offx, $offy);
 $html .= '</body></html>';
