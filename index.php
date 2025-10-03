@@ -9,15 +9,14 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lato:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Deck Generator ✨</title>
 
-  <link rel="stylesheet" href="assets/all.min.css" />
+  <!-- Les polices et icônes sont maintenant chargées via ces fichiers CSS locaux -->
   <link rel="stylesheet" href="assets/fonts.css" />
+  <link rel="stylesheet" href="assets/all.min.css" />
 
+  <!-- Styles principaux de l'application -->
   <style>
     :root {
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -41,12 +40,12 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
     .control-section h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .control-group { margin-bottom: 1rem; }
     .control-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-    input[type="file"], textarea, select, input[type="number"], input[type="text"] {
+    input[type="file"], textarea {
       width: 100%; padding: 0.75rem; background-color: var(--color-bg); border: 1px solid var(--color-border);
       border-radius: 6px; color: var(--color-text); font-family: inherit; font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s;
     }
     input[type="file"] { padding: 0.5rem; }
-    textarea:focus, select:focus, input:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+    textarea:focus, input:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
     .code-editor { font-family: monospace; font-size: 12px; min-height: 200px; resize: vertical; }
     button, .button { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
     button:active { transform: translateY(1px); }
@@ -77,14 +76,12 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
   </style>
 </head>
 <body>
-
   <div class="container">
     <aside class="sidebar">
       <header class="sidebar-header">
         <img src="assets/logo.svg" alt="Deck Generator Logo" class="logo" />
         <h1>Deck Generator</h1>
       </header>
-
       <div class="control-section">
         <h2>1. Données (CSV)</h2>
         <div class="control-group">
@@ -96,7 +93,6 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
           <textarea id="csv-data" rows="6" placeholder="id,category,client..."></textarea>
         </div>
       </div>
-
       <div class="control-section">
         <h2>2. Templates</h2>
         <div class="tabs">
@@ -104,7 +100,6 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
           <button class="tab-link" onclick="openTab(event, 'tab-css')">CSS</button>
           <button class="tab-link" onclick="openTab(event, 'tab-back-html')">Verso HTML</button>
         </div>
-
         <div id="tab-html" class="tab-content" style="display: block;">
           <textarea id="card-html" class="code-editor"><?php echo htmlspecialchars($card_html_template); ?></textarea>
         </div>
@@ -115,7 +110,6 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
           <textarea id="back-html" class="code-editor"><?php echo htmlspecialchars($back_html_template); ?></textarea>
         </div>
       </div>
-
       <button id="preview-button" class="button-primary" style="width:100%; margin-top: auto;">
         <i class="fa-solid fa-sync"></i> Mettre à jour la prévisualisation
       </button>
@@ -140,7 +134,6 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
           </button>
         </div>
       </div>
-
       <div id="preview-area" class="preview-area"></div>
     </main>
   </div>
@@ -150,7 +143,6 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
   
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // --- REFERENCES AUX ELEMENTS DU DOM ---
       const csvFileInput     = document.getElementById('csv-file-input');
       const csvDataTextarea  = document.getElementById('csv-data');
       const cardHtmlTextarea = document.getElementById('card-html');
@@ -164,32 +156,20 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
       let parsedData = [];
       exportDuplexButton.disabled = true;
 
-      // --- Font Awesome dans le Shadow DOM ---
-      let FA_CSS_TEXT = '';
-      fetch('assets/all.min.css')
-        .then(r => r.ok ? r.text() : Promise.reject('all.min.css introuvable'))
-        .then(css => {
-          FA_CSS_TEXT = css
-            .replace(/url\((['"])??\.\.\/webfonts\//g, "url($1assets/webfonts/")
-            .replace(/url\((['"])??\.\/webfonts\//g,  "url($1assets/webfonts/");
-        })
-        .catch(err => console.error('Font Awesome non injecté dans le shadow:', err));
-
-      // --- FONCTIONS PRINCIPALES ---
       function parseCSV(csvString) {
         Papa.parse(csvString, {
-          header: true,
-          skipEmptyLines: true,
+          header: true, skipEmptyLines: true,
           complete: (results) => {
             if (results.errors && results.errors.length > 0) {
               console.error("Erreurs de parsing CSV:", results.errors);
-              alert("Le fichier CSV contient des erreurs. Vérifiez la console pour les détails.");
+              alert("Le fichier CSV contient des erreurs."); return;
             }
             parsedData = results.data || [];
             if (parsedData.length > 0) {
               generatePreview();
               exportDuplexButton.disabled = false;
             } else {
+              previewArea.innerHTML = '<p style="color: var(--color-text-muted); text-align:center;">Aucune donnée valide trouvée.</p>';
               exportDuplexButton.disabled = true;
             }
           }
@@ -198,101 +178,91 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
 
       function generatePreview() {
         if (!parsedData.length) {
-          previewArea.innerHTML = '<p style="color: var(--color-text-muted); text-align:center;">Chargez des données CSV pour commencer.</p>';
-          return;
+          previewArea.innerHTML = '<p style="color: var(--color-text-muted); text-align:center;">Chargez des données CSV pour commencer.</p>'; return;
         }
-
         const cardHtmlTemplate = cardHtmlTextarea.value;
-        const cardCss          = cardCssTextarea.value;
+        const cardCss = cardCssTextarea.value;
         const backHtmlTemplate = backHtmlTextarea.value;
 
         try {
           const compiledCardTemplate = Handlebars.compile(cardHtmlTemplate);
           const compiledBackTemplate = Handlebars.compile(backHtmlTemplate);
-
           let allCardsHtml = '';
           parsedData.forEach(cardData => {
-            const cardContent = compiledCardTemplate(cardData);
-            let backContent   = compiledBackTemplate(cardData);
             allCardsHtml += `
               <div class="card-container-wrapper">
                 <div class="card-container">
-                  <div class="card-face card-front">${cardContent}</div>
-                  <div class="card-face card-back">${backContent}</div>
+                  <div class="card-face card-front">${compiledCardTemplate(cardData)}</div>
+                  <div class="card-face card-back">${compiledBackTemplate(cardData)}</div>
                 </div>
               </div>`;
           });
 
-          if (!previewArea.shadowRoot) {
-            previewArea.attachShadow({ mode: 'open' });
-          }
-
+          if (!previewArea.shadowRoot) previewArea.attachShadow({ mode: 'open' });
           const shadow = previewArea.shadowRoot;
           shadow.innerHTML = `
             <style>
-              ${FA_CSS_TEXT}
+              @import url('assets/fonts.css');
+              @import url('assets/all.min.css');
               .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
               .card-container-wrapper { perspective: 1500px; }
-              .card-container { width: 100%; aspect-ratio: 2.5 / 3.5; position: relative; border-radius: 12px; }
-              .card-face { position: absolute; inset: 0; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,.4); }
-              .grid-container[data-view="recto"] .card-back { display: none !important; }
-              .grid-container[data-view="verso"] .card-front { display: none !important; }
+              .card-container { width: 100%; aspect-ratio: 63.5 / 88.9; position: relative; }
+              .card-face { position: absolute; inset: 0; }
+              .grid-container[data-view="recto"] .card-back { display: none; }
+              .grid-container[data-view="verso"] .card-front { display: none; }
               ${cardCss}
             </style>
             <div class="grid-container" data-view="recto">${allCardsHtml}</div>
           `;
           exportDuplexButton.disabled = false;
         } catch (error) {
-          console.error("Erreur de compilation Handlebars:", error);
+          console.error("Erreur Handlebars:", error);
           previewArea.innerHTML = `<p style="color: #ff6b6b; font-family: monospace;">Erreur dans le template HTML: ${error.message}</p>`;
         }
       }
 
-      // --- EVENEMENTS ---
-      csvFileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) {
+      csvFileInput.addEventListener('change', e => {
+        if (e.target.files[0]) {
           const reader = new FileReader();
-          reader.onload = (e) => {
-            csvDataTextarea.value = e.target.result;
-            parseCSV(e.target.result);
-          };
-          reader.readAsText(file);
+          reader.onload = e => { csvDataTextarea.value = e.target.result; parseCSV(e.target.result); };
+          reader.readAsText(e.target.files[0]);
         }
       });
-
       csvDataTextarea.addEventListener('input', () => parseCSV(csvDataTextarea.value));
       previewButton.addEventListener('click', generatePreview);
-
       viewToggle.addEventListener('change', () => {
         const grid = previewArea.shadowRoot?.querySelector('.grid-container');
-        const isVerso = viewToggle.checked;
-        if (grid) {
-          grid.setAttribute('data-view', isVerso ? 'verso' : 'recto');
-        }
+        if (grid) grid.setAttribute('data-view', viewToggle.checked ? 'verso' : 'recto');
       });
 
-      // --- LOGIQUE POUR L'EXPORT PDF SERVEUR ---
       exportDuplexButton.addEventListener('click', async () => {
-        if (!parsedData.length) {
-          alert("Veuillez charger des données CSV et générer une prévisualisation avant d'exporter.");
-          return;
+        if (!parsedData || parsedData.length === 0) {
+          alert("Veuillez charger des données CSV avant d'exporter."); return;
         }
-
         const thisButton = exportDuplexButton;
-        thisButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Génération en cours...';
+        thisButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Préparation...';
         thisButton.disabled = true;
 
-        const payload = {
-          csv_data: csvDataTextarea.value,
-          tpl_front: cardHtmlTextarea.value,
-          tpl_css: cardCssTextarea.value,
-          tpl_back: backHtmlTextarea.value,
-          cols: 3, 
-          rows_per_page: 3 
-        };
-
         try {
+          const [printCssRes, faCssRes, fontsCssRes] = await Promise.all([
+            fetch('assets/print-styles.css'),
+            fetch('assets/all.min.css'),
+            fetch('assets/fonts.css')
+          ]);
+
+          const payload = {
+            rows: parsedData,
+            tpl_front: cardHtmlTextarea.value,
+            tpl_back: backHtmlTextarea.value,
+            css_card: cardCssTextarea.value,
+            css_print: await printCssRes.text(),
+            css_fa: await faCssRes.text(),
+            css_fonts: await fontsCssRes.text(),
+            cols: 3, rows_per_page: 3 
+          };
+
+          thisButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Génération PDF...';
+
           const response = await fetch('export.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -301,23 +271,27 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
 
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Le serveur a répondu avec une erreur : ${response.status}\n\n${errorText}`);
+            throw new Error(`Erreur du serveur (${response.status}):\n${errorText}`);
           }
           
           const blob = await response.blob();
+          if (blob.type !== 'application/pdf' || blob.size < 100) {
+             const errorText = await blob.text();
+             throw new Error(`La réponse n'est pas un PDF valide. Contenu:\n${errorText}`);
+          }
+
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.style.display = 'none';
           a.href = url;
           a.download = 'planches_de_cartes.pdf';
           document.body.appendChild(a);
           a.click();
-          window.URL.revokeObjectURL(url);
           a.remove();
+          window.URL.revokeObjectURL(url);
 
         } catch (error) {
-          console.error("Erreur lors de l'export PDF côté serveur:", error);
-          alert("Une erreur est survenue lors de l'export. Consultez la console (F12) pour les détails.");
+          console.error("Erreur lors de l'export PDF:", error);
+          alert("Une erreur est survenue. Consultez la console (F12) pour les détails techniques.");
         } finally {
           thisButton.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Exporter le PDF';
           thisButton.disabled = false;
@@ -325,15 +299,15 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
       });
     });
 
-    // Gestion des onglets
     function openTab(evt, tabName) {
       const tabcontent = document.getElementsByClassName("tab-content");
-      for (let i = 0; i < tabcontent.length; i++) tabcontent[i].style.display = "none";
+      [...tabcontent].forEach(tc => tc.style.display = "none");
       const tablinks = document.getElementsByClassName("tab-link");
-      for (let i = 0; i < tablinks.length; i++) tablinks[i].className = tablinks[i].className.replace(" active", "");
+      [...tablinks].forEach(tl => tl.className = tl.className.replace(" active", ""));
       document.getElementById(tabName).style.display = "block";
       evt.currentTarget.className += " active";
     }
   </script>
 </body>
 </html>
+

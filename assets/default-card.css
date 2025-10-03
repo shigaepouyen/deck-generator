@@ -5,7 +5,8 @@
    3) États de densité
    4) Palettes par catégorie
    5) Impression
-   6) Typo & lisibilité (après tout le reste pour éviter l'écrasement)
+   6) Typo & lisibilité
+   7) Style du verso
 */
 
 /* 1) Variables */
@@ -14,11 +15,6 @@
   --ink: #111827;   /* encre principale (quasi noir) */
   --muted: #475569; /* texte secondaire lisible */
   --shadow: rgba(0, 0, 0, .18);
-}
-
-/* 0) Reset d’héritage couleur côté Shadow host */
-:host, .grid-container, .card-container, .card-face {
-  color: initial; /* ou: unset */
 }
 
 /* 2) Base carte & éléments */
@@ -127,7 +123,7 @@
   color: #334155;
 }
 
-/* 3) États de densité (pour le JS fitBodies) */
+/* 3) États de densité */
 .card.compact .card-panel { padding: 10pt 10pt 6pt; }
 .card.ultra .card-panel   { padding: 9pt 9pt 5pt; }
 .card.compact .card-body  { font-size: 8.8pt; -webkit-line-clamp: 18; line-clamp: 18; }
@@ -160,20 +156,26 @@
   .card-footer { margin-top: 6pt; }
 }
 
-/* 6) Typo & lisibilité (placé en dernier pour éviter l'écrasement) */
-/* Polices: titres en Roboto Slab, reste en Lato (Inter en fallback) */
+/* 6) Typo & lisibilité */
 .card        { font-family: Lato, Inter, Arial, sans-serif; }
 .card-client { font-family: 'Roboto Slab', Georgia, serif; }
-
-/* Couleur d'encre cohérente dans le panneau blanc */
-.card-panel, .card-client, .card-body, .card-footer { color: var(--ink) !important; }
-.card-body { line-height: 1.5; }
-
-/* Texte secondaire (notes, explications) */
-.card-malefice { color: var(--muted) !important; }
-
-/* Neutralise les héritages parasites qui grisent le contenu */
 .card-panel * { color: inherit !important; }
+.card .fa, .card .fas { color: currentColor !important; }
 
-/* Icônes alignées sur la couleur du texte courant */
-.card .fa, .card .fas, .card .far, .card .fal, .card .fab { color: currentColor !important; }
+
+/* --- 7) STYLES POUR LE VERSO DE LA CARTE --- */
+.card.card--back {
+  background-color: #0f172a;
+  border: 4pt solid #fff;
+  padding: 0; /* Annule le padding hérité pour que le fond prenne toute la place */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1pt #0f172a; /* Ombre intérieure pour une bordure nette */
+}
+.card--back .logo {
+  width: 50%;
+  max-height: 50%;
+  filter: invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+

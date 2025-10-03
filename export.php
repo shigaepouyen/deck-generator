@@ -1,104 +1,125 @@
 <?php
-// export.php
-
 // Inclure l'autoloader de Composer et les fonctions utilitaires
 require 'vendor/autoload.php';
 require __DIR__ . '/lib/php-utils.php';
 
 use Spatie\Browsershot\Browsershot;
+use Spatie\Browsershot\Exceptions\CouldNotTakeBrowsershot;
 
-// Récupérer le payload JSON envoyé depuis l'interface
-if (!isset($_POST['payload'])) {
-    http_response_code(400);
-    die("Erreur : Aucune donnée reçue (payload manquant).");
-}
+// --- Augmenter la limite de temps d'exécution ---
+set_time_limit(180);
+
+// --- Récupérer et valider le payload ---
+if (!isset($_POST['payload'])) { http_response_code(400); die("Erreur : Payload manquant."); }
 $data = json_decode($_POST['payload'], true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    http_response_code(400);
-    die("Erreur : Les données JSON sont mal formées.");
+if (json_last_error() !== JSON_ERROR_NONE) { http_response_code(400); die("Erreur : JSON mal formé : " . json_last_error_msg()); }
+
+// --- Extraire les données ---
+$rows = $data['rows'] ?? [];
+$tpl_front = $data['tpl_front'] ?? '';
+$tpl_back = $data['tpl_back'] ?? '';
+$css_card = $data['css_card'] ?? '';
+$css_fonts = $data['css_fonts'] ?? '';
+$css_fa = $data['css_fa'] ?? '';
+$cols = $data['cols'] ?? 3;
+$rows_per_page = $data['rows_per_page'] ?? 3;
+
+if (empty($rows)) { http_response_code(400); die("Erreur: Le tableau de données des cartes ('rows') est vide."); }
+
+// --- Préparation du contenu HTML 100% autonome ---
+function embed_assets_as_base64($content, $asset_folder) {
+    $pattern = '/(url\(|src=)([\'"]?)((?:assets|fonts|webfonts)\/[^\'"]+)\2(\)?)/';
+    return preg_replace_callback($pattern,
+        function ($matches) use ($asset_folder) {
+            $prefix = $matches[1];
+            $asset_path = $asset_folder . '/' . preg_replace('/^assets\//', '', $matches[3]);
+            if (file_exists($asset_path)) {
+                $data = file_get_contents($asset_path);
+                $mime_type = mime_content_type($asset_path);
+                $base64 = 'data:' . $mime_type . ';base64,' . base64_encode($data);
+                return $prefix === 'url(' ? 'url(' . $base64 . ')' : 'src="' . $base64 . '"';
+            }
+            return $matches[0];
+        }, $content);
 }
 
-// Extraire les données dans des variables globales (conservé pour la génération HTML)
-extract_data($data);
+// CSS pour la mise en page PDF + Surcharges pour un rendu net
+$css_print_layout = "
+    @page { size: A4 portrait; margin: 0; }
+    body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .deck { --card-width: 63.5mm; --card-height: 88.9mm; --grid-gap: 5mm; }
+    .page { width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box; display: flex; justify-content: center; align-items: center; page-break-after: always; }
+    .card-grid { display: grid; grid-template-columns: repeat(var(--grid-cols, 3), var(--card-width)); gap: var(--grid-gap); }
+    
+    /* Styles spécifiques à l'export PDF pour supprimer les ombres */
+    .card, .card-badge, .card-back .logo { 
+        box-shadow: none !important; 
+        filter: none !important;
+    }
+    .card--back {
+        box-shadow: inset 0 0 0 1pt #0f172a !important;
+    }
+    .card--back img {
+      filter: invert(1) !important;
+    }
+";
 
-// --- Préparation du contenu HTML pour le PDF ---
+$assets_dir = __DIR__ . '/assets';
+$css_fonts_embedded = embed_assets_as_base64($css_fonts, $assets_dir);
+$css_fa_embedded = embed_assets_as_base64($css_fa, $assets_dir);
+$tpl_back_embedded = embed_assets_as_base64($tpl_back, $assets_dir);
+$tpl_front_embedded = embed_assets_as_base64($tpl_front, $assets_dir);
 
-// Chemin vers la nouvelle feuille de style pour l'impression
-$stylesheetPath = 'assets/print-styles.css';
+$all_css = $css_fonts_embedded . "\n" . $css_fa_embedded . "\n" . $css_card . "\n" . $css_print_layout;
 
-// Début du document HTML
-$htmlContent = '<!DOCTYPE html><html lang="fr"><head>
-    <meta charset="UTF-8">
-    <title>Planche de Cartes à Jouer</title>
-    <link rel="stylesheet" href="' . $stylesheetPath . '">
-</head><body><main class="deck">';
-
-// Logique pour générer les planches recto puis verso
+$htmlContent = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Planche de Cartes</title><style>' . $all_css . '</style></head><body><main class="deck">';
 $cardsPerPage = $cols * $rows_per_page;
 $pages = array_chunk($rows, $cardsPerPage);
 
-// 1. Générer toutes les pages de rectos
+// Génération des pages recto
 foreach ($pages as $pageCards) {
-    $htmlContent .= '<section class="page"><div class="card-grid">';
-    foreach ($pageCards as $card) {
-        $htmlContent .= '<article class="card card--recto">' . render_card($tpl_front, $card) . '</article>';
-    }
+    $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
+    foreach ($pageCards as $card) { $htmlContent .= render_card($tpl_front_embedded, $card); }
     $htmlContent .= '</div></section>';
 }
-
-// 2. Générer toutes les pages de versos
+// Génération des pages verso
 foreach ($pages as $pageCards) {
-    $htmlContent .= '<section class="page"><div class="card-grid">';
-    // Remplir les emplacements vides pour conserver la grille
-    $cardCount = count($pageCards);
+    $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
+    $cardCountOnPage = count($pageCards);
     for ($i = 0; $i < $cardsPerPage; $i++) {
-        // Le dos est le même pour toutes les cartes
-        $htmlContent .= '<article class="card card--verso">' . $tpl_back . '</article>';
+        $htmlContent .= ($i < $cardCountOnPage ? $tpl_back_embedded : '<div class="card"></div>');
     }
     $htmlContent .= '</div></section>';
 }
-
 $htmlContent .= '</main></body></html>';
 
 
-// --- Génération du PDF avec Browsershot ---
-
-$outputPath = __DIR__ . '/planches_de_cartes.pdf'; // Sortie à la racine du projet
+// --- Génération du PDF ---
+$outputPath = sys_get_temp_dir() . '/planches_de_cartes_' . uniqid() . '.pdf';
 
 try {
-    // Création de l'instance Browsershot
     Browsershot::html($htmlContent)
-        // CRUCIAL: Applique les styles @media print, @page, etc.
-        ->emulateMedia('print')
-        // Définit le format du papier pour correspondre au CSS
+        ->margins(0, 0, 0, 0)
         ->format('A4')
-        // S'assure que les couleurs et images de fond sont imprimées
         ->showBackground()
-        // Donne au navigateur le temps de charger toutes les ressources (images, polices web)
-        ->waitUntilNetworkIdle()
-        // Augmente le timeout pour les documents complexes (valeur en secondes)
-        ->timeout(120)
-        // Sauvegarde le fichier final
+        ->timeout(60)
+        ->addChromiumArguments(['--no-sandbox', '--disable-setuid-sandbox'])
         ->save($outputPath);
 
-    // Forcer le téléchargement du fichier généré
-    header('Content-Description: File Transfer');
     header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="' . basename($outputPath) . '"');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate');
-    header('Pragma: public');
+    header('Content-Disposition: attachment; filename="planches_de_cartes.pdf"');
     header('Content-Length: ' . filesize($outputPath));
     readfile($outputPath);
-    unlink($outputPath); // Supprimer le fichier du serveur après le téléchargement
+    unlink($outputPath);
     exit;
 
 } catch (Exception $e) {
-    // Gérer les erreurs potentielles (ex: timeout, binaire non trouvé)
     http_response_code(500);
-    echo "<h1>Erreur lors de la génération du PDF</h1>";
-    echo "<p>Message : " . htmlspecialchars($e->getMessage()) . "</p>";
-    echo "<pre>Assurez-vous que Node.js et Puppeteer sont correctement installés sur le serveur et accessibles par PHP.</pre>";
+    $errorMessage = "<h1>Erreur Browsershot</h1><p><strong>Message :</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
+    if ($e instanceof CouldNotTakeBrowsershot) {
+        $errorMessage .= "<h2>Sortie du processus :</h2><pre>" . htmlspecialchars($e->getOutput()) . "</pre>";
+    }
+    echo $errorMessage;
 }
-
 ?>
+
