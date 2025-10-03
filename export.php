@@ -23,7 +23,6 @@ $css_fonts = $data['css_fonts'] ?? '';
 $css_fa = $data['css_fa'] ?? '';
 $cols = $data['cols'] ?? 3;
 $rows_per_page = $data['rows_per_page'] ?? 3;
-
 if (empty($rows)) { http_response_code(400); die("Erreur: Le tableau de données des cartes ('rows') est vide."); }
 
 // --- Préparation du contenu HTML 100% autonome ---
@@ -49,7 +48,14 @@ $css_print_layout = "
     body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .deck { --card-width: 63.5mm; --card-height: 88.9mm; --grid-gap: 5mm; }
     .page { width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box; display: flex; justify-content: center; align-items: center; page-break-after: always; }
-    .card-grid { display: grid; grid-template-columns: repeat(var(--grid-cols, 3), var(--card-width)); gap: var(--grid-gap); }
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(var(--grid-cols, 3), var(--card-width));
+        grid-auto-rows: var(--card-height);
+        gap: var(--grid-gap);
+        align-items: stretch;
+        justify-items: stretch;
+    }
     
     /* Styles spécifiques à l'export PDF pour supprimer les ombres */
     .card, .card-badge, .card-back .logo { 
@@ -61,6 +67,11 @@ $css_print_layout = "
     }
     .card--back img {
       filter: invert(1) !important;
+    }
+    .card--placeholder {
+        background: #e2e8f0;
+        border: 1pt solid rgba(15, 23, 42, 0.12);
+        border-radius: var(--radius, 12pt);
     }
 ";
 
@@ -76,23 +87,30 @@ $htmlContent = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><titl
 $cardsPerPage = $cols * $rows_per_page;
 $pages = array_chunk($rows, $cardsPerPage);
 
-// Génération des pages recto
+// Génération des pages recto/verso intercalées
 foreach ($pages as $pageCards) {
-    $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
-    foreach ($pageCards as $card) { $htmlContent .= render_card($tpl_front_embedded, $card); }
-    $htmlContent .= '</div></section>';
-}
-// Génération des pages verso
-foreach ($pages as $pageCards) {
-    $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
     $cardCountOnPage = count($pageCards);
+    $pageCards = array_values($pageCards);
+
+    // Recto
+    $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
     for ($i = 0; $i < $cardsPerPage; $i++) {
-        $htmlContent .= ($i < $cardCountOnPage ? $tpl_back_embedded : '<div class="card"></div>');
+        if ($i < $cardCountOnPage) {
+            $htmlContent .= render_card($tpl_front_embedded, $pageCards[$i]);
+        } else {
+            $htmlContent .= '<div class="card card--placeholder"></div>';
+        }
+    }
+    $htmlContent .= '</div></section>';
+
+    // Verso
+    $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
+    for ($i = 0; $i < $cardsPerPage; $i++) {
+        $htmlContent .= ($i < $cardCountOnPage ? $tpl_back_embedded : '<div class="card card--placeholder"></div>');
     }
     $htmlContent .= '</div></section>';
 }
 $htmlContent .= '</main></body></html>';
-
 
 // --- Génération du PDF ---
 $outputPath = sys_get_temp_dir() . '/planches_de_cartes_' . uniqid() . '.pdf';
@@ -112,14 +130,9 @@ try {
     readfile($outputPath);
     unlink($outputPath);
     exit;
-
-} catch (Exception $e) {
+} catch (\Throwable $e) {
     http_response_code(500);
-    $errorMessage = "<h1>Erreur Browsershot</h1><p><strong>Message :</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
-    if ($e instanceof CouldNotTakeBrowsershot) {
-        $errorMessage .= "<h2>Sortie du processus :</h2><pre>" . htmlspecialchars($e->getOutput()) . "</pre>";
-    }
-    echo $errorMessage;
+    die('Erreur de génération PDF: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 ?>
 

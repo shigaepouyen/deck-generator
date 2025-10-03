@@ -37,10 +37,13 @@
     .card-grid {
         display: grid;
         /* Crée 3 colonnes fixes de la taille d'une carte */
-        grid-template-columns: repeat(3, 63mm); 
+        grid-template-columns: repeat(3, 63mm);
+        grid-auto-rows: 88mm;
         gap: 5mm; /* Espace entre les cartes */
         width: fit-content;
         height: fit-content;
+        align-items: stretch;
+        justify-items: stretch;
     }
 
     /* Style de base pour une carte */
@@ -51,5 +54,10 @@
         overflow: hidden;
         /* Les images ou fonds de carte doivent déborder dans la zone de fond perdu.
            Ceci est géré par votre CSS de carte existant si les fonds couvrent 100% de la div .card. */
+    }
+    .card--placeholder {
+        background: #e2e8f0;
+        border: 1pt solid rgba(15, 23, 42, 0.12);
+        border-radius: var(--radius, 12pt);
     }
 }

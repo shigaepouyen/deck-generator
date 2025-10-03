@@ -17,6 +17,13 @@
   --shadow: rgba(0, 0, 0, .18);
 }
 
+:host {
+  --radius: 14pt;
+  --ink: #111827;
+  --muted: #475569;
+  --shadow: rgba(0, 0, 0, .18);
+}
+
 /* 2) Base carte & éléments */
 .card {
   display: flex;
