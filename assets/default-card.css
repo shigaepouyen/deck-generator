@@ -16,6 +16,11 @@
   --shadow: rgba(0, 0, 0, .18);
 }
 
+/* 0) Reset d’héritage couleur côté Shadow host */
+:host, .grid-container, .card-container, .card-face {
+  color: initial; /* ou: unset */
+}
+
 /* 2) Base carte & éléments */
 .card {
   display: flex;

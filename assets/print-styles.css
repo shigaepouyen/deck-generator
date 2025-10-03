@@ -1,0 +1,55 @@
+/* assets/print-styles.css */
+
+/* Styles pour le contexte d'impression professionnel */
+@media print {
+    /* Règle @page pour contrôler la page physique */
+    @page {
+        size: A4 portrait; /* Taille physique du papier */
+        bleed: 3mm;        /* Définit une zone de fond perdu de 3mm */
+        marks: crop;       /* Demande au moteur de générer les traits de coupe */
+    }
+
+    /* Le corps du document ne doit pas avoir de marges qui interfèrent */
+    body {
+        margin: 0;
+    }
+
+    /* Chaque <section class="page"> représente une planche d'impression */
+    .page {
+        width: 210mm;      /* Largeur d'une page A4 */
+        height: 297mm;     /* Hauteur d'une page A4 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;  /* Empêche tout débordement */
+        box-sizing: border-box;
+    }
+    
+    /* Applique un saut de page AVANT chaque planche, sauf la toute première */
+    .deck > .page {
+        page-break-before: always;
+    }
+    .deck > .page:first-child {
+        page-break-before: auto;
+    }
+
+    /* La grille qui contient les cartes, centrée dans la page */
+    .card-grid {
+        display: grid;
+        /* Crée 3 colonnes fixes de la taille d'une carte */
+        grid-template-columns: repeat(3, 63mm); 
+        gap: 5mm; /* Espace entre les cartes */
+        width: fit-content;
+        height: fit-content;
+    }
+
+    /* Style de base pour une carte */
+    .card {
+        width: 63mm;
+        height: 88mm; /* Dimensions standard d'une carte de poker */
+        box-sizing: border-box;
+        overflow: hidden;
+        /* Les images ou fonds de carte doivent déborder dans la zone de fond perdu.
+           Ceci est géré par votre CSS de carte existant si les fonds couvrent 100% de la div .card. */
+    }
+}
