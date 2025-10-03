@@ -6,12 +6,12 @@ Une application web simple pour générer des planches de cartes prêtes à impr
 
 ## Fonctionnalités
 
-- Import de données via CSV (par fichier ou copier-coller)  
-- Templates HTML et CSS personnalisables avec pré-remplissage  
-- Prévisualisation en temps réel dans le navigateur  
-- Export PDF côté serveur avec la librairie **dompdf**  
-- Impression directe via le dialogue d'impression du navigateur  
-- Contrôles d’imposition complets : format de page, grille, fond perdu, gouttière, options recto-verso et décalages (offsets)
+- Import de données via un fichier CSV.  
+- Templates HTML et CSS personnalisables pour le recto et le verso des cartes, avec des valeurs par défaut.  
+- Prévisualisation en temps réel dans le navigateur.  
+- Export PDF haute résolution côté serveur avec la librairie **Spatie Browsershot**, garantissant un rendu fidèle du HTML.  
+- Impression directe depuis le navigateur pour un prototypage rapide.  
+- Contrôles d’imposition complets : format de page, grille (colonnes et rangées), fond perdu (bleed), gouttière (gap), options recto-verso et décalages (offsets).
 
 ---
 
@@ -20,9 +20,10 @@ Une application web simple pour générer des planches de cartes prêtes à impr
 - **Front-end** : HTML5, Vanilla JavaScript  
 - **Templating** : Handlebars.js  
 - **Parsing CSV** : PapaParse  
-- **Back-end** : PHP 8.x  
-- **Génération PDF** : dompdf  
+- **Back-end** : PHP 8+  
+- **Génération PDF** : Spatie Browsershot (utilisant Puppeteer / Google Chrome en headless)  
 - **Dépendances PHP** : Composer  
+- **Environnement d'exécution JS** : Node.js (requis pour Browsershot)
 
 ---
 
@@ -31,110 +32,125 @@ Une application web simple pour générer des planches de cartes prêtes à impr
 ```
 /deck-generator/
 ├── index.php               # Interface utilisateur principale
-├── print.php               # Génère la page pour l'impression navigateur
-├── export.php              # Génère le PDF côté serveur
-├── lib/php-utils.php       # Fonctions PHP partagées
-├── composer.json           # Fichier de configuration Composer
-├── vendor/                 # Dossier des dépendances (installé par Composer)
-│   └── dompdf/
+├── print.php               # Page de prévisualisation pour l'impression navigateur
+├── export.php              # Script de génération du PDF côté serveur
+├── lib/
+│   ├── php-utils.php       # Fonctions PHP partagées
+│   ├── handlebars.min.js   # Librairie Handlebars
+│   └── papaparse.min.js    # Librairie PapaParse
+├── composer.json           # Dépendances PHP
+├── composer.lock           # Fichier de verrouillage des versions
+├── package.json            # Dépendances Node.js (pour Puppeteer)
+├── vendor/                 # Dépendances installées par Composer
+├── node_modules/           # Dépendances installées par npm
 ├── assets/
-│   ├── default-card.html   # Template HTML par défaut pour une carte
+│   ├── default-card.html   # Template HTML par défaut pour le recto
+│   ├── back-default.html   # Template HTML par défaut pour le verso
 │   ├── default-card.css    # Styles CSS par défaut
-│   ├── back-default.html   # Template pour le dos des cartes
-│   ├── print-marks.css     # CSS pour les repères de coupe
-│   ├── all.min.css         # Fichier CSS de Font Awesome (local)
-│   ├── fonts.css           # Fichier CSS pour les polices de texte (local)
-│   ├── /webfonts/          # Dossier des polices Font Awesome
-│   └── /fonts/             # Dossier pour les polices de texte (ex: Inter)
+│   ├── print-marks.css     # CSS pour les repères de coupe du PDF
+│   ├── print-styles.css    # CSS pour la page d'impression navigateur
+│   ├── all.min.css         # Fichier CSS de Font Awesome
+│   ├── fonts.css           # Déclarations @font-face pour les polices
+│   ├── logo.svg            # Logo de l'application
+│   ├── /webfonts/          # Fichiers de police pour Font Awesome
+│   └── /fonts/             # Fichiers de police (ex: Lato, Roboto Slab)
 └── README.md               # Ce fichier
 ```
 
 ---
 
-## Installation 🚀
+## Installation sur macOS 🚀
 
-Ce projet nécessite **PHP** et **Composer** pour être installé localement avant d’être uploadé sur un serveur d’hébergement.
+Ce projet nécessite un environnement de développement complet (**PHP**, **Node.js**, **Composer**) pour fonctionner localement.
 
-### 1. Prérequis
+### 1. Prérequis : Homebrew
 
-Assurez-vous d’avoir **PHP** et **Composer** installés sur votre ordinateur.
+Homebrew est un gestionnaire de paquets qui simplifie l'installation. Si vous ne l'avez pas, ouvrez le Terminal et lancez :
 
-### 2. Télécharger le projet
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+### 2. Installer PHP, Composer et Node.js
+
+Installez toutes les dépendances nécessaires avec Homebrew :
+
+```bash
+brew install php
+brew install composer
+brew install node
+```
+
+### 3. Cloner le projet
 
 Clonez ce dépôt ou téléchargez les fichiers dans un dossier sur votre ordinateur.
 
-### 3. Installer les dépendances
+### 4. Installer les dépendances du projet
 
-Ouvrez un terminal, placez-vous dans le dossier du projet :
+Ouvrez un terminal, placez-vous dans le dossier du projet et exécutez les commandes suivantes :
 
 ```bash
+# Se placer dans le bon dossier
 cd chemin/vers/deck-generator
-composer require dompdf/dompdf
+
+# 1. Installer les dépendances PHP
+composer install
+
+# 2. Installer Puppeteer (nécessaire pour la génération de PDF)
+npm install puppeteer
 ```
 
-Cette commande créera le dossier `vendor/`.
+*Note : L'installation de Puppeteer peut prendre du temps car elle télécharge une version de Chromium.*
 
-### 4. Installer les polices (crucial pour le PDF)
+### 5. Lancement du serveur local
 
-#### Icônes (Font Awesome)
+Utilisez le serveur intégré de PHP pour lancer l'application :
 
-1. Téléchargez l’archive **“Free for Web”** depuis le site de Font Awesome.  
-2. Dézippez-la.  
-3. Copiez le dossier `webfonts` dans `assets/`.  
-4. Copiez le fichier `css/all.min.css` dans `assets/`.  
-5. Ouvrez `assets/all.min.css` et remplacez toutes les occurrences de `../webfonts` par `webfonts`.
+```bash
+php -S localhost:8000
+```
 
-#### Police de texte (Inter)
-
-1. Téléchargez la famille de polices **Inter** depuis Google Fonts.  
-2. Créez un dossier `assets/fonts`.  
-3. Copiez les fichiers `.ttf` (ex: Inter-Regular.ttf, Inter-Bold.ttf).  
-4. Vérifiez que `assets/fonts.css` contient les bonnes déclarations `@font-face`.
-
-### 5. Déploiement
-
-Uploadez tous les fichiers et dossiers (y compris `vendor/`) sur votre serveur d’hébergement (ex: Infomaniak).
+Ouvrez votre navigateur et allez à l'adresse **http://localhost:8000**.
 
 ---
 
 ## Utilisation 📝
 
 1. **Préparez votre CSV**  
-   Le fichier CSV doit contenir les en-têtes suivants (ordre libre mais noms exacts) :  
-   `id, category, category_slug, client, body, icon, malefice, malefice_points`
+   Le fichier CSV doit contenir des en-têtes (headers) sur la première ligne.  
+   Les noms des colonnes peuvent être librement utilisés dans les templates Handlebars (ex: `{{Titre}}`, `{{Description}}`).
 
 2. **Accédez à l’application**  
-   Ouvrez `index.php` dans votre navigateur.
+   Ouvrez `index.php` dans votre navigateur (via le serveur local).
 
 3. **Chargez vos données**  
-   Utilisez le sélecteur de fichier ou collez le contenu de votre CSV.
+   Utilisez le sélecteur de fichier pour charger votre fichier CSV.
 
-4. **Personnalisez (optionnel)**  
-   Modifiez les templates HTML ou le CSS directement depuis l’interface.
+4. **Personnalisez les templates**  
+   Modifiez le HTML et le CSS pour le recto et le verso des cartes directement dans l'interface.  
+   Utilisez la syntaxe `{{nom_de_la_colonne}}` pour insérer les données de votre CSV.
 
-5. **Configurez l’impression**  
-   Choisissez le format, la grille, le fond perdu, etc. dans le panneau “Imposition & Export”.
+5. **Configurez l’imposition**  
+   Dans le panneau “Imposition & Export”, ajustez le format de page, la disposition en grille, le fond perdu et les autres paramètres selon vos besoins.
 
-6. **Générez vos cartes**
+6. **Générez vos cartes**  
+   - **Prévisualiser** : met à jour l'aperçu dans le navigateur.  
+   - **Imprimer (navigateur)** : ouvre une nouvelle fenêtre avec la planche de cartes, prête pour le dialogue d'impression du navigateur (idéal pour un test rapide).  
+   - **Exporter PDF (serveur)** : génère un fichier PDF haute résolution avec les repères de coupe, parfait pour l'impression professionnelle.
 
-   - Cliquez sur **“Prévisualiser”** pour un aperçu.  
-   - Cliquez sur **“Imprimer (navigateur)”** pour imprimer directement.  
-   - Cliquez sur **“Exporter PDF (serveur)”** pour générer un PDF.
+---
+
+## Conseils et bonnes pratiques 💡
+
+- Vérifiez toujours que les images ou icônes appelées dans les templates existent localement.  
+- Pour un rendu optimal des polices, installez les fichiers `.ttf` correspondants et déclarez-les dans `fonts.css`.  
+- Lors de l’impression, utilisez des marges minimales et désactivez le redimensionnement automatique du navigateur.  
+- Pour l’export PDF, privilégiez l’usage du serveur pour éviter les différences de rendu liées aux moteurs de navigateur.  
+- Vous pouvez combiner ce projet avec un outil de design (ex: Figma, Canva) pour générer des visuels avant intégration dans les templates.
 
 ---
 
-## Gestion des Fichiers Locaux
+## Licence 📜
 
-### Icônes (Font Awesome)
-
-- Téléchargez “Free for Web” sur le site de Font Awesome.  
-- Copiez le dossier `webfonts` et le fichier `css/all.min.css` dans `assets/`.  
-- Éditez `all.min.css` pour corriger les chemins (`../webfonts` → `webfonts`).
-
-### Police de texte (Inter)
-
-- Téléchargez la police **Inter** depuis Google Fonts.  
-- Copiez les `.ttf` dans `assets/fonts`.  
-- Vérifiez les `@font-face` dans `assets/fonts.css`.
-
----
+Projet open source librement modifiable et redistribuable.  
+Créé pour les créateurs, game designers et imprimeurs indépendants souhaitant prototyper ou produire leurs propres cartes sans dépendances complexes.
