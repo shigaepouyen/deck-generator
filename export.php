@@ -1,10 +1,15 @@
 <?php
 // Inclure l'autoloader de Composer et les fonctions utilitaires
-require 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/lib/php-utils.php';
 
 use Spatie\Browsershot\Browsershot;
 use Spatie\Browsershot\Exceptions\CouldNotTakeBrowsershot;
+
+if (!class_exists(Browsershot::class)) {
+    http_response_code(500);
+    die('<h1>Module Browsershot introuvable</h1><p>Assurez-vous que le paquet <code>spatie/browsershot</code> est installé via Composer.</p>');
+}
 
 // --- Augmenter la limite de temps d'exécution ---
 set_time_limit(180);
@@ -27,16 +32,23 @@ if (empty($rows)) { http_response_code(400); die("Erreur: Le tableau de données
 
 // --- Préparation du contenu HTML 100% autonome ---
 function embed_assets_as_base64($content, $asset_folder) {
-    $pattern = '/(url\(|src=)([\'"]?)((?:assets|fonts|webfonts)\/[^\'"]+)\2(\)?)/';
+    $pattern = "#(?P<prefix>url\\(|src=)(?P<quote>['\"]?)(?P<path>(?:\\.\\./|\\./)?(?:assets|fonts|webfonts)/[^'\")]+)(?P=quote)(?P<suffix>\\))?#";
     return preg_replace_callback($pattern,
         function ($matches) use ($asset_folder) {
-            $prefix = $matches[1];
-            $asset_path = $asset_folder . '/' . preg_replace('/^assets\//', '', $matches[3]);
+            $prefix = $matches['prefix'];
+            $quote = $matches['quote'];
+            $relative_path = preg_replace('#^(?:\.\.?/)+#', '', $matches['path']);
+            $relative_path = preg_replace('#^assets/#', '', $relative_path);
+            $asset_path = rtrim($asset_folder, '/\\') . '/' . $relative_path;
             if (file_exists($asset_path)) {
                 $data = file_get_contents($asset_path);
-                $mime_type = mime_content_type($asset_path);
+                $mime_type = mime_content_type($asset_path) ?: 'application/octet-stream';
                 $base64 = 'data:' . $mime_type . ';base64,' . base64_encode($data);
-                return $prefix === 'url(' ? 'url(' . $base64 . ')' : 'src="' . $base64 . '"';
+                if ($prefix === 'url(') {
+                    return 'url(' . $quote . $base64 . $quote . ')';
+                }
+                $attr_quote = $quote !== '' ? $quote : '"';
+                return 'src=' . $attr_quote . $base64 . $attr_quote;
             }
             return $matches[0];
         }, $content);
@@ -135,4 +147,3 @@ try {
     die('Erreur de génération PDF: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
 }
 ?>
-
