@@ -54,6 +54,34 @@ function embed_assets_as_base64($content, $asset_folder) {
         }, $content);
 }
 
+/**
+ * Construit une carte "cas libre" utilisée pour compléter la dernière page
+ * lorsque le nombre de cartes n'est pas un multiple de la grille.
+ */
+function build_placeholder_card(array $referenceCard = []): array {
+    $placeholder = array_fill_keys(array_keys($referenceCard), '');
+    $iconClass = 'fa-solid fa-pen-to-square';
+
+    $placeholder = array_merge($placeholder, [
+        'body' => '<em>J’invente ma propre situation client et je la transforme en demande claire.</em>',
+        'client' => 'Cas libres',
+        'customer' => 'Cas libres',
+        'category' => 'Cas libres',
+        'category_slug' => 'cas-libres',
+        'icon' => $iconClass,
+        'picto' => $iconClass,
+        'title' => 'Cas libres',
+    ]);
+
+    foreach (['icon', 'picto', 'category_icon', 'badge_icon'] as $iconKey) {
+        if (!array_key_exists($iconKey, $placeholder) || trim((string) $placeholder[$iconKey]) === '') {
+            $placeholder[$iconKey] = $iconClass;
+        }
+    }
+
+    return $placeholder;
+}
+
 // CSS pour la mise en page PDF + Surcharges pour un rendu net
 $css_print_layout = "
     @page { size: A4 portrait; margin: 0; }
@@ -85,6 +113,17 @@ $css_print_layout = "
         border: 1pt solid rgba(15, 23, 42, 0.12);
         border-radius: var(--radius, 12pt);
     }
+    .card.cas-libres {
+        --bg: #e2e8f0;
+        --pill: #334155;
+        --ink: #0f172a;
+    }
+    .card.cas-libres .card-band {
+        background: var(--pill, #334155);
+    }
+    .card.cas-libres .card-badge {
+        background: var(--pill, #334155);
+    }
 ";
 
 $assets_dir = __DIR__ . '/assets';
@@ -98,27 +137,35 @@ $all_css = $css_fonts_embedded . "\n" . $css_fa_embedded . "\n" . $css_card . "\
 $htmlContent = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Planche de Cartes</title><style>' . $all_css . '</style></head><body><main class="deck">';
 $cardsPerPage = $cols * $rows_per_page;
 $pages = array_chunk($rows, $cardsPerPage);
+$placeholderCard = build_placeholder_card($rows[0] ?? []);
+
+// On complète la liste des cartes avec des "Cas libres" pour remplir la dernière page
+$cards = $rows;
+$remainder = count($cards) % $cardsPerPage;
+if ($remainder !== 0) {
+    $placeholdersToAdd = $cardsPerPage - $remainder;
+    for ($i = 0; $i < $placeholdersToAdd; $i++) {
+        $cards[] = $placeholderCard;
+    }
+}
+
+$pages = array_chunk($cards, $cardsPerPage);
 
 // Génération des pages recto/verso intercalées
 foreach ($pages as $pageCards) {
-    $cardCountOnPage = count($pageCards);
     $pageCards = array_values($pageCards);
 
     // Recto
     $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
-    for ($i = 0; $i < $cardsPerPage; $i++) {
-        if ($i < $cardCountOnPage) {
-            $htmlContent .= render_card($tpl_front_embedded, $pageCards[$i]);
-        } else {
-            $htmlContent .= '<div class="card card--placeholder"></div>';
-        }
+    foreach ($pageCards as $cardData) {
+        $htmlContent .= render_card($tpl_front_embedded, $cardData);
     }
     $htmlContent .= '</div></section>';
 
     // Verso
     $htmlContent .= '<section class="page" style="--grid-cols: ' . $cols . ';"><div class="card-grid">';
-    for ($i = 0; $i < $cardsPerPage; $i++) {
-        $htmlContent .= ($i < $cardCountOnPage ? $tpl_back_embedded : '<div class="card card--placeholder"></div>');
+    foreach ($pageCards as $_) {
+        $htmlContent .= $tpl_back_embedded;
     }
     $htmlContent .= '</div></section>';
 }

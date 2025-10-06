@@ -147,6 +147,7 @@
 .card.activation{ --bg: #475569; --pill: #1f2937; }
 .card.general   { --bg: #f1b94a; --pill: #233144; }
 .card.challenge { --bg: #6d28d9; --pill: #2a1366; }
+.card.cas-libres { --bg: #e2e8f0; --pill: #334155; --ink: #0f172a; }
 
 /* 5) Optimisation impression */
 @media print {
