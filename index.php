@@ -113,6 +113,12 @@ $back_html_template = file_get_contents(__DIR__ . '/assets/back-default.html');
       <button id="preview-button" class="button-primary" style="width:100%; margin-top: auto;">
         <i class="fa-solid fa-sync"></i> Mettre à jour la prévisualisation
       </button>
+
+      <div style="text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+        <a href="html_to_pdf.php" style="color: var(--color-text-muted); text-decoration: none; font-size: 0.9rem;">
+          <i class="fa-solid fa-file-code"></i> Outil HTML vers PDF
+        </a>
+      </div>
     </aside>
 
     <main class="main-content">
