@@ -96,6 +96,11 @@ $css_print_layout = "
         align-items: stretch;
         justify-items: stretch;
     }
+    .card-grid > * {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        overflow: hidden; /* Empêche le contenu de déborder de la carte */
+    }
     
     /* Styles spécifiques à l'export PDF pour supprimer les ombres */
     .card, .card-badge, .card-back .logo { 
